@@ -14,11 +14,13 @@ app.use(cors());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.orcrk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
-const partsCollection = client.db('manufacturer').collection('parts');
+
 
 async function run() {
     try {
         await client.connect();
+        const partsCollection = client.db('manufacturer').collection('parts');
+        const reviewsCollection = client.db('manufacturer').collection('reviews');
         // products load
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find().toArray();
@@ -31,7 +33,12 @@ async function run() {
             const result = await partsCollection.findOne(query)
             res.send(result)
         })
-      
+        //   add reviews
+        app.post('/reviews', async (req, res) => {
+            const reviews = req.body;
+            const result = await reviewsCollection.insertOne(reviews);
+            res.send(result);
+        })
     }
     finally {
 
