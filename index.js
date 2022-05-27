@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const { use } = require('express/lib/router');
 const ObjectId = require('mongodb').ObjectId
 const app = express();
 const port = process.env.PORT || 5000;
@@ -48,6 +47,15 @@ async function run() {
               };
             const reslut = await usersCollection.updateOne(filter, updateDoc, options);
             res.send(reslut);
+
+        })
+
+        // load my profile
+        app.get('/my-profile/:email', async (req, res)=>{
+            const email =req.params.email;
+            const query = {email:email};
+            const result = await usersCollection.findOne(query)
+            res.send(result)
 
         })
 
