@@ -21,6 +21,7 @@ async function run() {
         await client.connect();
         const partsCollection = client.db('manufacturer').collection('parts');
         const reviewsCollection = client.db('manufacturer').collection('reviews');
+        const ordersCollection = client.db('manufacturer').collection('orders');
         // products load
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find().toArray();
@@ -42,6 +43,12 @@ async function run() {
         app.get('/reviews', async (req, res) => {
             const reviews = await reviewsCollection.find().toArray();
             res.send(reviews.reverse());
+        });
+        // add orders
+        app.post('/orders', async (req, res) => {
+            const orders = req.body;
+            const result = await ordersCollection.insertOne(orders);
+            res.send(result);
         })
     }
     finally {
