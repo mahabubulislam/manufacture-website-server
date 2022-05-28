@@ -107,6 +107,10 @@ async function run() {
             const orders = await ordersCollection.find(query).toArray();
             res.send(orders)
         });
+        app.get('/orders', async (req, res) => {
+            const orders = await ordersCollection.find().toArray();
+            res.send(orders)
+        });
         // update orders payment status
         // app.patch('/orders/:id', async (req, res) => {
         //     const id = req.params.id;
