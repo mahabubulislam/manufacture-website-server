@@ -83,20 +83,18 @@ async function run() {
             res.send(users);
         })
 
-        app.get('/admin/:email', async (req,res)=>{
+        app.get('/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            const user = await usersCollection.findOne({email:email});
+            const user = await usersCollection.findOne({ email: email });
             const isAdmin = user.role === 'admin';
-            res.send({admin : isAdmin});
+            res.send({ admin: isAdmin });
         })
-
 
 
 
         app.put('/users/admin/:email', async (req, res) => {
             const email = req.params.email
             const filter = { email: email };
-            console.log('admin', filter);
             const updateDoc = {
                 $set: { role: 'admin' }
             };
@@ -129,7 +127,7 @@ async function run() {
 
 
         // get my profile
-        app.get('/my-profile/:email', async (req, res) => {
+        app.get('/my-profile/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const result = await usersInfoCollection.findOne(query)
@@ -182,7 +180,7 @@ async function run() {
         });
 
         // load order for single user user
-        app.get('/myorders', async (req, res) => {
+        app.get('/myorders', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const query = { email: email }
             const orders = await ordersCollection.find(query).toArray();
@@ -190,42 +188,21 @@ async function run() {
         });
 
 
-
         // update orders payment status
-        // app.patch('/orders/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const {transactionId} = req.body;
-        //     const filter = { _id: ObjectId(id) };
-        //     console.log(id, filter);
-        //     // console.log(payment);
-        //     const updateDoc = {
-        //         $set:{
-        //             paid: true,
-        //             transactionId: transactionId
-        //         }
-        //     }
-        //     console.log(updateDoc);
-        //     // const paidOrder = await paymentCollection.insertOne()
-        //     const updatedOrder = await ordersCollection.updateOne(filter,updateDoc);
-        //     console.log(updatedOrder);
-        //     res.send(updatedOrder)
-        // })
-        app.patch("/orders/payment/:id", async (req, res) => {
+        app.patch('/orders/:id', async (req, res) => {
             const id = req.params.id;
-            const { transactionId } = req.body;
+            const payment = req.body;
+            console.log(id);
             const filter = { _id: ObjectId(id) };
-            const updatedDoc = {
+            const updateDoc = {
                 $set: {
                     paid: true,
-                    status: "pending",
-                    transactionId: transactionId,
-                },
-            };
-            const result = await ordersCollection.updateOne(filter, updatedDoc);
-            res.send(result);
-        });
-
-
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedOrder = await paymentCollection.updateOne(filter, updateDoc);
+            res.send(updatedOrder)
+        })
     }
     finally {
 
