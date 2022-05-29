@@ -16,6 +16,21 @@ app.use(cors());
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.orcrk.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unAuthorization access' })
+    }
+    const token = authHeader.split(' ')[1];
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
 
 
 async function run() {
@@ -27,18 +42,20 @@ async function run() {
         const paymentCollection = client.db('manufacturer').collection('payments');
         const usersCollection = client.db('manufacturer').collection('users');
         const usersInfoCollection = client.db('manufacturer').collection('users-info');
-        // products load
+        // get products 
         app.get('/parts', async (req, res) => {
             const parts = await partsCollection.find().toArray();
             res.send(parts.reverse())
         })
+
         // add product
         app.post('/parts', async (req, res) => {
             const part = req.body;
-            console.log(part);
             const result = await partsCollection.insertOne(part);
             res.send(result)
         })
+
+
         // load single products
         app.get('/parts/:id', async (req, res) => {
             const id = req.params.id;
@@ -56,26 +73,56 @@ async function run() {
             const updateDoc = {
                 $set: userInfo
             };
-            const reslut = await usersInfoCollection.updateOne(filter, updateDoc, options);
-            res.send(reslut);
+            const result = await usersInfoCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
 
         })
-        // user collection
-        app.put('/users/:id', async (req, res) => {
+        // get all user
+        app.get('/users', async (req, res) => {
+            const users = await usersCollection.find().toArray();
+            res.send(users);
+        })
+
+
+
+
+
+        app.put('/users/admin/:email', async (req, res) => {
+            const email = req.params.email
+            const filter = { email: email };
+            console.log('admin', filter);
+            const updateDoc = {
+                $set: { role: 'admin' }
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        })
+        //    add user in database
+        app.put('/users/:email', async (req, res) => {
             const email = req.params.email
             const filter = { email: email };
             const user = req.body;
             const options = { upsert: true };
             const updateDoc = {
-                $set: user
+                $set: user,
             };
-            const reslut = await usersInfoCollection.updateOne(filter, updateDoc, options);
-            const token = jwt.sign({email:email},process.env.ACCESS_TOKEN_SECRET,{expiresIn: '1d'});
-            res.send({reslut, token});
-
-
+            const result = await usersCollection.updateOne(filter, updateDoc, options);
+            const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+            res.send({ result, token });
         })
-        // load my profile
+
+
+
+        // delete user
+        app.delete('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const result = await usersCollection.deleteOne(filter);
+            res.send(result)
+        })
+
+
+        // get my profile
         app.get('/my-profile/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
@@ -83,6 +130,8 @@ async function run() {
             res.send(result)
 
         })
+
+
         // payment intend
         app.post('/create-payment-intent', async (req, res) => {
             const order = req.body;
@@ -95,18 +144,20 @@ async function run() {
             });
             res.send({ clientSecret: paymentIntent.client_secret });
         })
+
+        // get reviews
         app.get('/reviews', async (req, res) => {
             const reviews = await reviewsCollection.find().toArray();
             res.send(reviews.reverse());
         });
+
+
         //   add reviews
         app.post('/reviews', async (req, res) => {
             const reviews = req.body;
             const result = await reviewsCollection.insertOne(reviews);
             res.send(result);
         })
-
-        // load reviews
 
 
         // add orders
@@ -115,6 +166,15 @@ async function run() {
             const result = await ordersCollection.insertOne(orders);
             res.send(result);
         });
+
+
+        // get all orders
+
+        app.get('/orders', async (req, res) => {
+            const orders = await ordersCollection.find().toArray();
+            res.send(orders)
+        });
+
         // load order for single user user
         app.get('/myorders', async (req, res) => {
             const email = req.query.email;
@@ -122,10 +182,9 @@ async function run() {
             const orders = await ordersCollection.find(query).toArray();
             res.send(orders)
         });
-        app.get('/orders', async (req, res) => {
-            const orders = await ordersCollection.find().toArray();
-            res.send(orders)
-        });
+
+
+
         // update orders payment status
         // app.patch('/orders/:id', async (req, res) => {
         //     const id = req.params.id;
@@ -157,7 +216,6 @@ async function run() {
                 },
             };
             const result = await ordersCollection.updateOne(filter, updatedDoc);
-            console.log(result);
             res.send(result);
         });
 
