@@ -55,6 +55,14 @@ async function run() {
             res.send(result)
         })
 
+        // delete parts
+
+        app.delete('/parts/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: (ObjectId(id)) };
+            const result = await partsCollection.deleteOne(filter);
+            res.send(result)
+        })
 
         // load single products
         app.get('/parts/:id', async (req, res) => {
@@ -179,9 +187,9 @@ async function run() {
             res.send(orders)
         });
 
-        app.delete('/orders/:id', async (req, res)=>{
+        app.delete('/orders/:id', async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: ObjectId(id)}
+            const filter = { _id: ObjectId(id) }
             const result = await ordersCollection.deleteOne(filter);
             res.send(result)
         })
