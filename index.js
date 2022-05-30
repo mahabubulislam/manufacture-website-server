@@ -204,18 +204,18 @@ async function run() {
 
 
         // update orders payment status
-        app.patch('/orders/:id', async (req, res) => {
+        app.patch('/orders/payment/:id', async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
-            console.log(id);
-            const filter = { _id: ObjectId(id) };
+            const filter = { id: id };
+            console.log(filter);
             const updateDoc = {
                 $set: {
                     paid: true,
                     transactionId: payment.transactionId
                 }
             }
-            const updatedOrder = await paymentCollection.updateOne(filter, updateDoc);
+            const updatedOrder = await ordersCollection.updateOne(filter, updateDoc);
             res.send(updatedOrder)
         })
     }
